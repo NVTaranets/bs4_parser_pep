@@ -1,5 +1,6 @@
 import logging
 import re
+from collections import defaultdict
 from urllib.parse import urljoin
 
 import requests_cache
@@ -7,26 +8,21 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, MAIN_PEP_URL
+from constants import (BASE_DIR, DOWNLOAD_URL, EXPECTED_STATUS, MAIN_DOC_URL,
+                       MAIN_PEP_URL, WHATS_NEW_URL)
 from outputs import control_output
 from utils import find_tag, get_response
 
 
 def whats_new(session):
 
-    whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
-
-    response = get_response(session, whats_new_url)
-
+    response = get_response(session, WHATS_NEW_URL)
     if response is None:
         return response
 
     soup = BeautifulSoup(response.text, features='lxml')
-
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
-
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
-
     sections_by_python = div_with_ul.find_all(
         'li',
         attrs={'class': 'toctree-l1'}
@@ -36,7 +32,7 @@ def whats_new(session):
     for section in tqdm(sections_by_python):
         version_a_tag = find_tag(section, 'a')
         href = version_a_tag['href']
-        version_link = urljoin(whats_new_url, href)
+        version_link = urljoin(WHATS_NEW_URL, href)
         response = get_response(session, version_link)
         if response is None:
             continue
@@ -47,19 +43,15 @@ def whats_new(session):
         results.append(
             (version_link, h1.text, dl_text)
         )
-
     return results
 
 
 def latest_versions(session):
 
     response = get_response(session, MAIN_DOC_URL)
-
     if response is None:
         return response
-
     soup = BeautifulSoup(response.text, 'lxml')
-
     sidebar = find_tag(soup, 'div', {'class': 'sphinxsidebarwrapper'})
     ul_tags = sidebar.find_all('ul')
     for ul in ul_tags:
@@ -86,8 +78,7 @@ def latest_versions(session):
 
 def download(session):
 
-    downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
-    response = get_response(session, downloads_url)
+    response = get_response(session, DOWNLOAD_URL)
     if response is None:
         return
     soup = BeautifulSoup(response.text, features='lxml')
@@ -99,7 +90,7 @@ def download(session):
         {'href': re.compile(r'.+pdf-a4\.zip$')}
         )
     pdf_a4_link = pdf_a4_tag['href']
-    archive_url = urljoin(downloads_url, pdf_a4_link)
+    archive_url = urljoin(DOWNLOAD_URL, pdf_a4_link)
     filename = archive_url.split('/')[-1]
     downloads_dir = BASE_DIR / 'downloads'
     downloads_dir.mkdir(exist_ok=True)
@@ -138,7 +129,7 @@ def pep(session):
         )
 
     not_exist_err_status = True
-    counts = dict()
+    counts = defaultdict(int)
     for pep in tqdm(hrefs):
 
         status_pep, href, name = pep
@@ -166,7 +157,7 @@ def pep(session):
             ]
             logging.info('\r\n'.join(info_msg))
             not_exist_err_status = False
-        counts[status] = counts.setdefault(status, 0) + 1
+        counts[status] += 1
 
     return (
         [('Статус', 'Количество')]
@@ -194,10 +185,8 @@ def main():
     session = requests_cache.CachedSession()
     if args.clear_cache:
         session.cache.clear()
-
     parser_mode = args.mode
     results = MODE_TO_FUNCTION[parser_mode](session)
-
     if results is not None:
         control_output(results, args)
     logging.info('Парсер завершил работу.')
