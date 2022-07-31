@@ -42,6 +42,9 @@ git clone https://github.com/nvtaranets/bs4_parser_pep/
 - Создайте виртуальное окружение для проекта
 
 - Установите зависимости из файла requirements.txt
+```
+pip install -r requirements.txt
+``` 
 
 - Запуск выполнить командой:
 
@@ -57,3 +60,9 @@ python main.py [-h] [-c] [-o {pretty,file}]
 ## Автор
 
 [Николай Таранец](https://github.com/nvtaranets)  
+
+## License
+
+MIT
+
+**Free Software, Hell Yeah!**
