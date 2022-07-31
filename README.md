@@ -36,14 +36,14 @@
 - Склонируйте репозиторий на свой компьютер:
 
 ```py
-https://github.com/nvtaranets/BS4_PARSER_PEP/
+git clone https://github.com/nvtaranets/bs4_parser_pep/
 ```
 
 - Создайте виртуальное окружение для проекта
 
 - Установите зависимости из файла requirements.txt
 
-- Запуск выполлнить командой:
+- Запуск выполнить командой:
 
 ```
 python main.py [-h] [-c] [-o {pretty,file}]
